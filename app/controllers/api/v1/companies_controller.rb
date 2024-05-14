@@ -1,6 +1,7 @@
 class Api::V1::CompaniesController < ApplicationController
   def index
-    companies = Company.all.order(created_at: :desc)
-    render json: companies.as_json(include: :deals)
+    companies = Api::V1::Companies::Index.new(params).perform
+
+    render json: companies.as_json
   end
 end
