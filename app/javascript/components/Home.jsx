@@ -10,15 +10,36 @@ export default () => {
   const [minEmployee, setMinEmployee] = useState("");
   const [minimumDealAmount, setMinimumDealAmount] = useState("");
 
-  // Fetch companies from API
-  useEffect(() => {
-    const url = "/api/v1/companies";
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const fetchCompanies = () => {
+    const url = `/api/v1/companies?company=${encodeURIComponent(companyName)}&industry=${encodeURIComponent(industry)}&employee=${minEmployee}&amount=${minimumDealAmount}&page=${currentPage}&per_page=${itemsPerPage}`;
     fetch(url)
-      .then((res) => {
-        return res.json();
-      })
-      .then((res) => setCompanies(res))
-  }, [])
+    .then((res) => res.json())
+    .then((res) => {
+      setCompanies(res.data);
+      setTotalPages(res.total_pages);
+    })
+    .catch(error => console.error(error));
+  };
+
+  // Fetch companies from API initially and on page change
+  useEffect(() => {
+    fetchCompanies();
+  }, [currentPage, itemsPerPage]);
+
+  const handleApplyFilters = () => {
+    setCurrentPage(1); // Reset to first page when filters are applied
+    fetchCompanies();
+  };
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
 
   return (
     <div className="vw-100 primary-color d-flex align-items-center justify-content-center">
@@ -38,13 +59,15 @@ export default () => {
 
           <label htmlFor="min-employee">Minimum Employee Count</label>
           <div className="input-group mb-3">
-            <input type="text" className="form-control" id="min-employee" value={minEmployee} onChange={e => setMinEmployee(e.target.value)} />
+            <input type="number" min="0" className="form-control" id="min-employee" value={minEmployee} onChange={e => setMinEmployee(e.target.value)} />
           </div>
 
           <label htmlFor="min-amount">Minimum Deal Amount</label>
           <div className="input-group mb-3">
-            <input type="text" className="form-control" id="min-amount" value={minimumDealAmount} onChange={e => setMinimumDealAmount(e.target.value)} />
+            <input type="number" min="0" className="form-control" id="min-amount" value={minimumDealAmount} onChange={e => setMinimumDealAmount(e.target.value)} />
           </div>
+
+          <button onClick = {handleApplyFilters}>Get companies</button>
 
           <table className="table">
             <thead>
@@ -61,11 +84,18 @@ export default () => {
                   <td>{company.name}</td>
                   <td>{company.industry}</td>
                   <td>{company.employee_count}</td>
-                  <td>{company.deals.reduce((sum, deal) => sum + deal.amount, 0)}</td>
+                  <td>{company.total_amount || 0}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {/* Pagination */}
+          <div>
+            <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1 || totalPages === 0}>Previous</button>
+            <span>Page {currentPage} of {totalPages}</span>
+            <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0}>Next</button>
+          </div>
         </div>
       </div>
     </div>
